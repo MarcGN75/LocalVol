@@ -79,7 +79,7 @@ class BlackScholes:
             a = - (S * norm.pdf(d1) * self.vol) / (2 * np.sqrt(ttm))
             b = - self.rf_rate * K * np.exp(-self.rf_rate * ttm) * N(d2)
             theta = a + b
-        elif option_type = 'PUT':
+        elif option_type == 'PUT':
             a = - (S * norm.pdf(d1) * self.vol) / (2 * np.sqrt(ttm))
             b = self.rf_rate * K * np.exp(-self.rf_rate * ttm) * N(-d2)
             theta = a + b
