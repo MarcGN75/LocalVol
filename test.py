@@ -1,19 +1,13 @@
 import pandas as pd
 import numpy as np
 
-def conv(x, y):
-    if y >= 15:
-        return (33.8*np.sin(1.65*(x-0.89))+33.9)/0.19
-    else:
-        return x
 
+l1 = [1, 2, 3]
+l2 = [3, 4, 5]
+a = np.array([l1, l2])
 
-dico = {'A': [1, 2, 3],
-        'B': [10, 20, 30]}
-df = pd.DataFrame(data=dico)
-print(df)
-df['C'] = [0, 0, 0]
-print(df)
-df['C']=df.apply(lambda x: conv(x['A'], x['B']), axis=1)
+print(a)
+print(a[1])
+print(a[0, 1])
+print(len(a))
 
-print(df)
