@@ -6,9 +6,11 @@ from scipy.stats import norm
 N = norm.cdf
 
 class BlackScholes:
-    def __init__(self, underlying, vol, rf_rate):
+    def __init__(self, underlying, vol, implied_vol, strikes, rf_rate):
         self.underlying = underlying
         self.vol = vol
+        self.implied_vol = implied_vol
+        self.strikes = strikes
         self.rf_rate = rf_rate
         self.call_prices = pd.DataFrame(columns=['Type', 'Underlying', 'Spot', 'Strike', 'TimeToMaturity', 'd1',
                                                  'd2', 'Price', 'Delta', 'Gamma', 'Vega', 'Theta', 'Rho'])

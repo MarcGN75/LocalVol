@@ -1,11 +1,22 @@
-import numpy as np
+import pandas as pd
 
-class yield_curve:
-    def __init__(self, tenors, rates, ttm_list):
+class YieldCurve:
+    def __init__(self, tenors, tenors_f, rates):
         self.tenors = tenors
-        self.ttm = ttm_list
+        self.tenors_f = tenors_f
         self.rates = rates
-        self.yield_curve = np.array((self.tenors, self.rates))
+        self.yield_curve = None
+
+
+    def set_yield_curve_df(self):
+        data_dict = {
+            'Tenor': self.tenors,
+            'TimeToMaturity': self.tenors_f, 
+            'Rate': self.rates}
+        df = pd.DataFrame(data=data_dict)
+        
+        self.yield_curve = df
+
 
     def apply_bootstrap(self):
         return self.yield_curve
