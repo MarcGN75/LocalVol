@@ -4,7 +4,6 @@ from yield_curve import YieldCurve
 from tools import create_new_csv, find_rate
 
 underlying = 'TEST'
-vol=0.20
 file_path = 'C:/Users/MarcNogueira/Documents/data/'
 file_name = 'ImpliedvolData.csv'
 
@@ -16,6 +15,7 @@ def main():
 
     time_to_maturity = my_data.vol_data['TimeToMaturity'].loc[0]
     spot = my_data.vol_data['Spot'].loc[0]
+    strikes = my_data.vol_data['Strike'].tolist()
 
 # SET ZERO COUPON YIELD CURVE
     tenors = ['1D', '1M', '3M', '6M', '12M']
@@ -26,13 +26,21 @@ def main():
 
     tenor_ind = find_rate(zc_curve.yield_curve, time_to_maturity)
     rf_rate = zc_curve.yield_curve['Rate'].loc[tenor_ind]
-
-    BS = BlackScholes(underlying, vol, rf_rate)
     
-    for k in my_data.vol_data['Strike']:
-        implied_vol = 
-        BS = BlackScholes(underlying, implied_vol)
-        call_price = BS.call_price(spot, k, time_to_maturity)
+    const_vol=0.20
+    implied_vol = my_data.vol_data['ImpliedVolatility'].tolist()
+    BS = BlackScholes(underlying,
+                      spot,
+                      const_vol,
+                      strikes,
+                      time_to_maturity,
+                      implied_vol,
+                      rf_rate)
+    
+    for i in range(len(BS.strikes)):
+        vol = BS.const_vol
+        k = BS.strikes[i]
+        call_price = BS.call_price(k)
     
     BS.compute_delta()
     BS.compute_gamma()

@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats import norm
 
 from BlackScholes_class import BlackScholes
 
@@ -9,10 +10,26 @@ class Dupire(BlackScholes):
         self.ttm = time_to_maturity
         self.local_vol = None
 
-    def compute_local_vol(self, K, implied_vol):
+    def compute_local_vol_Dupire(self, K, implied_vol):
         '''
-        ' Function that computes local volatility for a couple (K, T)
+        ' Compute the local volatility according to Dupire's Equation (1993)
         ' K: Float - Strike
+        ' implied_vol: Float - Implied volatility
+        '''
+        d1 = (np.log(self.spot / K) + (1/2) * implied_vol**2) / (implied_vol * self.time_to_maturity)
+        d1_density = norm.pdf(d1)
+        theta = (self.spot * d1_density * implied_vol) / (2 * np.sqrt(self.time_to_maturity))
+        gamma = d1_density / (self.spot * implied_vol * np.sqrt(self.time_to_maturity))
+
+        local_vol = theta / ((1/2) * (K**2) * gamma)
+
+        return local_vol
+
+    def compute_local_vol_Derman(self, K, implied_vol):
+        '''
+        ' Compute the local volatility according to the Derman et al. derivation (2006)
+        ' K: Float - Strike
+        ' implied_vol: Float - Implied volatility
         '''
         F = self.spot * np.exp(self.rf_rate * self.ttm)
         y = np.log(K / F)
@@ -29,18 +46,46 @@ class Dupire(BlackScholes):
     # Numerator
         N = implied_vol**2
     
-    # Implied volatility
-        implied_volatility = N / D
+    # Local volatility
+        local_vol = N / D
 
-        return implied_volatility
+        return local_vol
 
-    def compute_loc_vol_function(self):
+    def compute_local_vol_BS(self):
+        '''
+        ' Compute local volatility from Black Scholes' implied volatility (1973)
+        '''
+        return True
+
+    def compute_loc_vol_function(self, func_type):
+        '''
+        ' Compute local volatility for a set of strikes on one maturity i.e. the volatility smile
+        ' func_type: String - The function used to compute the local volatility
+            ' Dupire
+            ' Derman
+            ' BS
+        '''
         local_vol_list = []
-        for i in range(len(self.implied_vol)):
-            temp_k = self.strikes[i]
-            temp_implied_vol = self.implied_vol[i]
+        if func_type=='Dupire':
+            for i in range(len(self.implied_vol)):
+                temp_k = self.strikes[i]
+                temp_implied_vol = self.implied_vol[i]
             
-            local_vol = self.compute_local_vol(temp_k, temp_implied_vol)
-            local_vol_list.append(local_vol)
+                local_vol = self.compute_local_vol_Dupire(temp_k, temp_implied_vol)
+                local_vol_list.append(local_vol)
+        elif func_type=='Derman':
+            for i in range(len(self.implied_vol)):
+                temp_k = self.strikes[i]
+                temp_implied_vol = self.implied_vol[i]
+            
+                local_vol = self.compute_local_vol_Derman(temp_k, temp_implied_vol)
+                local_vol_list.append(local_vol)
+        elif func_type=='BS':
+            for i in range(len(self.implied_vol)):
+                temp_k = self.strikes[i]
+                temp_implied_vol = self.implied_vol[i]
+            
+                local_vol = self.compute_local_vol_BS(temp_k, temp_implied_vol)
+                local_vol_list.append(local_vol)
 
         self.local_vol = local_vol_list
