@@ -6,30 +6,32 @@ from scipy.stats import norm
 N = norm.cdf
 
 class BlackScholes:
-    def __init__(self, underlying, spot, const_vol, strikes, time_to_maturity, implied_vol, rf_rate):
+    def __init__(self, underlying, spot, strikes, time_to_maturity,
+                 const_vol, implied_vol, local_vol, rf_rate):
         self.underlying = underlying
         self.spot = spot
-        self.const_vol = const_vol
         self.strikes = strikes
         self.time_to_maturity = time_to_maturity
+        self.const_vol = const_vol
         self.implied_vol = implied_vol
+        self.local_vol = local_vol
         self.rf_rate = rf_rate
-        self.call_prices = pd.DataFrame(columns=['Type', 'Underlying', 'Spot', 'Strike', 'TimeToMaturity', 'd1',
-                                                 'd2', 'Price', 'Delta', 'Gamma', 'Vega', 'Theta', 'Rho'])
+        self.call_prices = pd.DataFrame(columns=['Type', 'Underlying', 'Spot', 'Strike', 'TimeToMaturity', 'Volatility',
+                                                 'd1', 'd2', 'Price', 'Delta', 'Gamma', 'Vega', 'Theta', 'Rho'])
         self.put_prices = pd.DataFrame(columns=['Type', 'Underlying', 'Spot', 'Strike', 'TimeToMaturity', 'd1',
                                                  'd2', 'Price', 'Delta', 'Gamma', 'Vega', 'Theta', 'Rho'])
 
 # Black Scholes closed formulas for vanilla calls and puts from 1973 paper
-    def call_price(self, K):
+    def call_price(self, K, sigma):
         log_sk = np.log(self.spot / K)
-        vol_T = self.const_vol * np.sqrt(self.time_to_maturity)
+        vol_T = sigma * np.sqrt(self.time_to_maturity)
         
-        d1 = (log_sk + (self.rf_rate + (self.vol**2)/2) * self.time_to_maturity) / vol_T
+        d1 = (log_sk + (self.rf_rate + (sigma**2)/2) * self.time_to_maturity) / vol_T
         d2 = d1 - vol_T
 
         price = self.spot * N(d1) - K * np.exp(-self.rf_rate * self.time_to_maturity) * N(d2)
 
-        call_price = ['CALL', self.underlying, self.spot, K, self.time_to_maturity, d1, d2, price, 0, 0, 0, 0, 0]
+        call_price = ['CALL', self.underlying, self.spot, K, self.time_to_maturity, sigma, d1, d2, price, 0, 0, 0, 0, 0]
         
         self.call_prices.loc[-1] = call_price
         self.call_prices.index = self.call_prices.index + 1
@@ -37,16 +39,16 @@ class BlackScholes:
         
         return self.call_prices
 
-    def put_price(self, K):
+    def put_price(self, K, sigma):
         log_sk = np.log(self.spot / K)
-        vol_T = self.const_vol * np.sqrt(self.time_to_maturity)
+        vol_T = sigma * np.sqrt(self.time_to_maturity)
         
-        d1 = (log_sk + (self.rf_rate + (self.const_vol**2)/2) * self.time_to_maturity) / vol_T
+        d1 = (log_sk + (self.rf_rate + (sigma**2)/2) * self.time_to_maturity) / vol_T
         d2 = d1 - vol_T
 
         price = K * np.exp(-self.rf_rate * self.time_to_maturity) * N(-d2) - self.spot * N(-d1)
 
-        put_price = ['PUT', self.underlying, self.spot, K, self.time_to_maturity, d1, d2, price, 0, 0, 0, 0, 0]
+        put_price = ['PUT', self.underlying, self.spot, K, self.time_to_maturity, sigma, d1, d2, price, 0, 0, 0, 0, 0]
         
         self.put_prices.loc[-1] = put_price
         self.put_prices.index = self.put_prices.index + 1
@@ -70,19 +72,19 @@ class BlackScholes:
                                                                                 x['d1']), axis=1)
 
 ## GAMMA
-    def gamma(self, K, d2):
+    def gamma(self, K, sigma, d2):
         num = K * np.exp(-self.rf_rate * self.time_to_maturity) * norm.pdf(d2)
-        den = self.spot**2 * self.vol * np.sqrt(self.time_to_maturity)
+        den = self.spot**2 * sigma * np.sqrt(self.time_to_maturity)
         gamma = num / den
 
         return gamma
     
     def compute_gamma(self):
         self.call_prices['Gamma'] = self.call_prices.apply(lambda x: self.gamma(x['Strike'],
+                                                                                x['TimeToMaturity'],
                                                                                 x['d2']), axis=1)
 
 ## VEGA
-    @staticmethod
     def vega(self, d1):
         vega = self.spot * norm.pdf(d1) * np.sqrt(self.time_to_maturity)
 

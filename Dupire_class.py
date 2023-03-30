@@ -4,10 +4,8 @@ from scipy.stats import norm
 from BlackScholes_class import BlackScholes
 
 # One Dupire model per smile/skew i.e. only one maturity for the moment
-class Dupire(BlackScholes):
-    def __init__(self, spot, time_to_maturity):
-        self.spot = spot
-        self.ttm = time_to_maturity
+class LocalVol(BlackScholes):
+    def __init__(self):
         self.local_vol = None
 
     def compute_local_vol_Dupire(self, K, implied_vol):
@@ -16,7 +14,7 @@ class Dupire(BlackScholes):
         ' K: Float - Strike
         ' implied_vol: Float - Implied volatility
         '''
-        d1 = (np.log(self.spot / K) + (1/2) * implied_vol**2) / (implied_vol * self.time_to_maturity)
+        d1 = (np.log(self.spot / K) + (1/2) * implied_vol**2) / (implied_vol * np.sqrt(self.time_to_maturity))
         d1_density = norm.pdf(d1)
         theta = (self.spot * d1_density * implied_vol) / (2 * np.sqrt(self.time_to_maturity))
         gamma = d1_density / (self.spot * implied_vol * np.sqrt(self.time_to_maturity))
@@ -57,7 +55,7 @@ class Dupire(BlackScholes):
         '''
         return True
 
-    def compute_loc_vol_function(self, func_type):
+    def compute_local_vol(self, func_type):
         '''
         ' Compute local volatility for a set of strikes on one maturity i.e. the volatility smile
         ' func_type: String - The function used to compute the local volatility
@@ -89,3 +87,4 @@ class Dupire(BlackScholes):
                 local_vol_list.append(local_vol)
 
         self.local_vol = local_vol_list
+
