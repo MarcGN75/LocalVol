@@ -1,12 +1,13 @@
 import numpy as np
 from scipy.stats import norm
 
-from BlackScholes_class import BlackScholes
-
 # One Dupire model per smile/skew i.e. only one maturity for the moment
-class LocalVol(BlackScholes):
-    def __init__(self):
-        self.local_vol = None
+class LocalVol:
+    def __init__(self, spot, strikes, time_to_maturity, implied_vol):
+        self.spot = spot
+        self.strikes = strikes
+        self.time_to_maturity = time_to_maturity
+        self.implied_vol = implied_vol
 
     def compute_local_vol_Dupire(self, K, implied_vol):
         '''
@@ -18,9 +19,11 @@ class LocalVol(BlackScholes):
         d1_density = norm.pdf(d1)
         theta = (self.spot * d1_density * implied_vol) / (2 * np.sqrt(self.time_to_maturity))
         gamma = d1_density / (self.spot * implied_vol * np.sqrt(self.time_to_maturity))
-
-        local_vol = theta / ((1/2) * (K**2) * gamma)
-
+        
+        if self.spot > K:
+            local_vol = np.sqrt(theta / ((1/2) * ((self.spot - K)**2) * gamma))
+        else:
+            local_vol = np.sqrt(theta / ((1/2) * (K**2) * gamma))
         return local_vol
 
     def compute_local_vol_Derman(self, K, implied_vol):

@@ -29,6 +29,8 @@ class BlackScholes:
         d1 = (log_sk + (self.rf_rate + (sigma**2)/2) * self.time_to_maturity) / vol_T
         d2 = d1 - vol_T
 
+
+### REVOIR FORMULE IF SELON MONEYNESS !!!
         price = self.spot * N(d1) - K * np.exp(-self.rf_rate * self.time_to_maturity) * N(d2)
 
         call_price = ['CALL', self.underlying, self.spot, K, self.time_to_maturity, sigma, d1, d2, price, 0, 0, 0, 0, 0]
@@ -38,6 +40,7 @@ class BlackScholes:
         self.call_prices = self.call_prices.sort_index()
         
         return self.call_prices
+# ---------------------------------------
 
     def put_price(self, K, sigma):
         log_sk = np.log(self.spot / K)
