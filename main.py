@@ -1,70 +1,52 @@
 from BlackScholes_class import BlackScholes
-from Dupire_class import LocalVol
 from data_class import Data
-from yield_curve import YieldCurve
-from tools import create_new_csv, find_rate
-
-underlying = 'TEST'
-file_path = 'C:/Users/MarcNogueira/Documents/data/'
-file_name = 'ImpliedvolData_skew.csv'
 
 
 def main():
-# GET IMPLIED VOLATILITY DATA
-    my_data = Data()
-    my_data.read_vol_data(file_path, file_name)
+# GET PRICES DATA
+    underlying = 'Eurex DowJones UBS Commodity Index'
+    file_path = 'C:/Users/MarcNogueira/Documents/data/Eurex DowJones UBS Commodity Index/'
+    file_name = 'Eurex DowJones UBS BASE-2 DEC23 AsOf 23062023.csv'
 
-    spot = my_data.vol_data['Spot'].loc[0]
-    strikes = my_data.vol_data['Strike'].tolist()
-    time_to_maturity = my_data.vol_data['TimeToMaturity'].loc[0]
-    implied_vol = my_data.vol_data['ImpliedVolatility'].tolist()
+    # Initialize a Data object to import and store market prices
+    my_data = Data(underlying)
+    my_data.import_option_data_from_csv(file_path, file_name)
 
-# SET ZERO COUPON YIELD CURVE
-    tenors = ['1D', '1M', '3M', '6M', '12M']
-    tenors_f = [0.003, 0.083, 0.25, 0.50, 1.00]
-    rates = [0.04, 0.04, 0.04, 0.04, 0.04]
-    zc_curve = YieldCurve(tenors, tenors_f, rates)
-    zc_curve.set_yield_curve_df()
-
-    tenor_ind = find_rate(zc_curve.yield_curve, time_to_maturity)
-    rf_rate = zc_curve.yield_curve['Rate'].loc[tenor_ind]
-    
-    const_vol=0.80
-# First model that will be used for constant volatility calculus
-    # BS_const = BlackScholes(underlying,
-    #                        spot,
-    #                        strikes,
-    #                        time_to_maturity,
-    #                        const_vol,
-    #                        None,
-    #                        None,
-    #                        rf_rate)
-
-# Second model that will be used for implied volatility calculus
-    BS_implied = BlackScholes(underlying,
-                              spot,
-                              strikes,
-                              time_to_maturity,
-                              const_vol,
-                              implied_vol,
-                              None,
-                              rf_rate)
-    
-    LocalVolatility = LocalVol(BS_implied.spot,
-                               BS_implied.strikes,
-                               BS_implied.time_to_maturity,
-                               BS_implied.implied_vol)
-    LocalVolatility.compute_local_vol(func_type='Dupire')
-    local_vol = LocalVolatility.local_vol
-# Third model using local volatility
-    BS_local = BlackScholes(underlying,
+# First version of the model that contain only constant volatility
+    # Initialize inputs for the following BlackScholes model
+    strikes = my_data.data['STRIKE'].to_list()
+    spot = 100
+    time_to_maturity = my_data.data['TIME_TO_MATURITY'][0]
+    const_vol = 0.80
+    rf_rate = 0.01454
+    # Initialize the model (constant volatility only)
+    BS_model = BlackScholes(underlying,
                             spot,
                             strikes,
                             time_to_maturity,
+                            rf_rate,
                             const_vol,
-                            implied_vol,
-                            local_vol,
-                            rf_rate)
+                            None,
+                            None)
+    # Compute Implied volatility and Add it to Data.data for further calculations
+    implied_volatility = []
+    for i in range(len(my_data.data)):
+        option_type = my_data.data['SMILE_TYPE'][i]
+        K = my_data.data['STRIKE'][i]
+        market_price = my_data.data['SMILE'][i]
+
+        sigma = BS_model.compute_implied_volatility_iter(option_type, K, market_price, start_guess=0.5)
+        implied_volatility.append(sigma)
+    my_data.data['IMPLIED_VOLATILITY'] = implied_volatility
+
+    my_data.data.to_clipboard()
+
+    LocalVolatility = LocalVol(BS_model.spot,
+                               BS_model.strikes,
+                               BS_model.time_to_maturity,
+                               BS_model.implied_vol)
+    LocalVolatility.compute_local_vol(func_type='Dupire')
+    local_vol = LocalVolatility.local_vol
 
 # Compute prices for both models
     for i in range(len(BS_local.strikes)):
@@ -85,26 +67,6 @@ def main():
 
     # csv_path = create_new_csv('test_const.csv')
     # BS_const.call_prices.to_csv(csv_path, sep=';', index=False, decimal='.')
-    
-# Compute greeks for the implied volatility model
-    # BS_implied.compute_delta()
-    # BS_implied.compute_gamma()
-    # BS_implied.compute_vega()
-    # BS_implied.compute_theta()
-    # BS_implied.compute_rho()
-    
-    # csv_path = create_new_csv('test_implied_skew.csv')
-    # BS_implied.call_prices.to_csv(csv_path, sep=';', index=False, decimal='.')
-
-# Compute greeks for the implied volatility model
-    BS_local.compute_delta()
-    BS_local.compute_gamma()
-    BS_local.compute_vega()
-    BS_local.compute_theta()
-    BS_local.compute_rho()
-    
-    csv_path = create_new_csv('test_local_skew_moneyness.csv')
-    BS_local.call_prices.to_csv(csv_path, sep=';', index=False, decimal='.')
 
 if __name__ == '__main__':
     main()

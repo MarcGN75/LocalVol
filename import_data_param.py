@@ -1,8 +1,8 @@
 import datetime
 
 # DATES INTERVAL
-start = datetime.date(2023,4,24)
-end = datetime.date(2023,4,27)
+start = datetime.date(2023,6,25)
+end = datetime.date(2023,6,26)
 
 # Parameters for calls and puts on "Eurex Dow Jones UBS Commodity Index Option" on maturity DEC23
 ## MATURITY

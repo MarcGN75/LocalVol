@@ -52,19 +52,12 @@ class LocalVol:
 
         return local_vol
 
-    def compute_local_vol_BS(self):
-        '''
-        ' Compute local volatility from Black Scholes' implied volatility (1973)
-        '''
-        return True
-
     def compute_local_vol(self, func_type):
         '''
         ' Compute local volatility for a set of strikes on one maturity i.e. the volatility smile
         ' func_type: String - The function used to compute the local volatility
             ' Dupire
             ' Derman
-            ' BS
         '''
         local_vol_list = []
         if func_type=='Dupire':
@@ -80,13 +73,6 @@ class LocalVol:
                 temp_implied_vol = self.implied_vol[i]
             
                 local_vol = self.compute_local_vol_Derman(temp_k, temp_implied_vol)
-                local_vol_list.append(local_vol)
-        elif func_type=='BS':
-            for i in range(len(self.implied_vol)):
-                temp_k = self.strikes[i]
-                temp_implied_vol = self.implied_vol[i]
-            
-                local_vol = self.compute_local_vol_BS(temp_k, temp_implied_vol)
                 local_vol_list.append(local_vol)
 
         self.local_vol = local_vol_list

@@ -1,35 +1,23 @@
-import refinitiv.dataplatform.eikon as ek
+import eikon as ek
 import pandas as pd
+import csv
 
-ek.set_app_key('DEFAULT_CODE_BOOK_APP_KEY')
+ek.set_app_key('38833b0f2e7f48fda301d77d0919b030239b5dbc')
 
 def get_option_data(ric, start, end):
-    '''
-    Get The close price for a single option (ric) and a single maturity within a range of dates
-    ric: String - The ticker of the underlying
-    start: Date - Start date to retrieve data
-    end: Date - Last date to retrieve data
-    '''
     try:
         data = ek.get_timeseries(rics=ric,
                                  start_date=str(start),
                                  end_date=str(end),
-                                 interval="daily",
+                                 interval='daily',
                                  fields=['CLOSE'])
     except:
         print('No data for ', ric)
+        return None
     
     return data
 
 def get_option_data_all_strikes(rics_dict, maturity, option_type, start, end):
-    '''
-    Get the close price for a set of underlyings and a single maturity and concatenate the result in a Pandas DataFrame
-    rics_dict: Dictionnary - Storing the list of underlyings for which we want data
-    maturity: Date - Options' Expiry
-    option_type: String - CALL or PUT
-    start: Date - Start date to retrieve data
-    end: Date - Last date to retrieve data
-    '''
 # Prepare the DataFrame
     df = pd.DataFrame()
     df['PRICE_DATE'] = pd.date_range(start=start, end=end).to_list()
@@ -45,6 +33,11 @@ def get_option_data_all_strikes(rics_dict, maturity, option_type, start, end):
     
     return df
 
-def build_smile():
-    return True
+
+def print_data_to_csv(df, filename, path='C:\\Users\\MarcNogueira\\Documents\\test_csv\\UBS Commodity Index\\'):
+    with open(path + filename, 'w') as csvfile:
+        filewriter = csv.writer(csvfile, delimiter=';')
+        csvfile.close()
+
+    return path + filename
 
