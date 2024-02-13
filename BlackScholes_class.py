@@ -36,25 +36,23 @@ class BlackScholes:
 # CALLS -----------------------------------------
     def call_price(self, K, sigma):
         log_sk = np.log(self.spot / K)
-        sigma2 = (sigma**2)/2
-        r_sigma = (self.rf_rate + sigma2) * self.time_to_maturity
+        r_sigma = (self.rf_rate + (sigma**2)/2) * self.time_to_maturity
         vol_T = sigma * np.sqrt(self.time_to_maturity)
         
         d1 = (log_sk + r_sigma) / vol_T
         d2 = d1 - vol_T
-
-        n1 = N(d1)
-        n2 = N(d2)
-        price = self.spot * n1 - K * np.exp(-self.rf_rate * self.time_to_maturity) * n2
+        
+        price = self.spot * N(d1) - K * np.exp(-self.rf_rate * self.time_to_maturity) * N(d2)
 
         return price
 
 # PUTS ------------------------------------------
     def put_price(self, K, sigma):
         log_sk = np.log(self.spot / K)
+        r_sigma = (self.rf_rate + (sigma**2)/2) * self.time_to_maturity
         vol_T = sigma * np.sqrt(self.time_to_maturity)
         
-        d1 = (log_sk + (self.rf_rate + (sigma**2)/2) * self.time_to_maturity) / vol_T
+        d1 = (log_sk + r_sigma) / vol_T
         d2 = d1 - vol_T
 
         price = K * np.exp(-self.rf_rate * self.time_to_maturity) * N(-d2) - self.spot * N(-d1)
@@ -135,30 +133,25 @@ class BlackScholes:
 
 # COMPUTE IMPLIED VOLATILITY **************************************************
     # Implied volatility computation based on the Newton-Raphson method
-    def compute_implied_volatility_NewtonRaphson(self, option_type, K, market_price, max_iter=1000, start_guess=0.5, precision=0.01):
-        sigma = start_guess
-        for i in range(max_iter):
-            option_price = self.option_price(option_type, K, sigma)
-            diff = market_price - option_price
-            if abs(diff) < precision:
-                return sigma
-            
-        return sigma
 
-    def compute_implied_volatility_iter(self, option_type, K, market_price,
-                                        max_iter=10000, start_guess=0.5, precision=0.1):
+    def compute_implied_volatility_NewtonRaphson(self, option_type, K, market_price,
+                                        max_iter=10000, start_guess=0.5, precision=0.001):
         sigma = start_guess
         i = 0
         while i < max_iter:
             price = self.option_price(option_type, K, sigma)
-            diff = price - market_price
+            diff = market_price - price
+            
+            log_sk = np.log(self.spot / K)
+            r_sigma = (self.rf_rate + (sigma**2)/2) * self.time_to_maturity
+        
+            d1 = (log_sk + r_sigma) / (sigma * np.sqrt(self.time_to_maturity))
+            vega = self.vega(d1)
+
             if abs(diff) < precision:
                 return sigma
-
-            if diff > 0:
-                sigma -= 0.001
             else:
-                sigma += 0.001
+                sigma += diff / vega
 
             i += 1
 

@@ -1,4 +1,5 @@
 from BlackScholes_class import BlackScholes
+from Dupire_class import LocalVol
 from data_class import Data
 
 
@@ -35,20 +36,25 @@ def main():
         K = my_data.data['STRIKE'][i]
         market_price = my_data.data['SMILE'][i]
 
-        sigma = BS_model.compute_implied_volatility_iter(option_type, K, market_price, start_guess=0.5)
+        sigma = BS_model.compute_implied_volatility_NewtonRaphson(option_type, K, market_price)
         implied_volatility.append(sigma)
     my_data.data['IMPLIED_VOLATILITY'] = implied_volatility
+    BS_model.implied_vol = implied_volatility
 
-    my_data.data.to_clipboard()
 
+    # Local volatility computation is wrong for the moment !! *****
     LocalVolatility = LocalVol(BS_model.spot,
+                               BS_model.rf_rate,
                                BS_model.strikes,
                                BS_model.time_to_maturity,
                                BS_model.implied_vol)
     LocalVolatility.compute_local_vol(func_type='Dupire')
-    local_vol = LocalVolatility.local_vol
+    my_data.data['LOCAL_VOLATILITY'] = LocalVolatility.local_vol
 
-# Compute prices for both models
+
+    my_data.data.to_clipboard()  # For quicker tests *****
+
+# Compute prices for all models
     for i in range(len(BS_local.strikes)):
         K = BS_local.strikes[i]
         # sigma_const = BS_const.const_vol
@@ -65,6 +71,7 @@ def main():
     # BS_const.compute_theta()
     # BS_const.compute_rho()
 
+# Save results in a CSV file
     # csv_path = create_new_csv('test_const.csv')
     # BS_const.call_prices.to_csv(csv_path, sep=';', index=False, decimal='.')
 

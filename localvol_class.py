@@ -1,10 +1,11 @@
 import numpy as np
 from scipy.stats import norm
 
-# One Dupire model per smile/skew i.e. only one maturity for the moment
+# One Dupire model per smile/skew i.e. only one maturity
 class LocalVol:
-    def __init__(self, spot, strikes, time_to_maturity, implied_vol):
+    def __init__(self, spot, rf_rate, strikes, time_to_maturity, implied_vol):
         self.spot = spot
+        self.rf_rate = rf_rate
         self.strikes = strikes
         self.time_to_maturity = time_to_maturity
         self.implied_vol = implied_vol
@@ -15,19 +16,24 @@ class LocalVol:
         ' K: Float - Strike
         ' implied_vol: Float - Implied volatility
         '''
-        d1 = (np.log(self.spot / K) + (1/2) * implied_vol**2) / (implied_vol * np.sqrt(self.time_to_maturity))
+        log_sk = np.log(self.spot / K)
+        r_sigma = (self.rf_rate + (implied_vol**2)/2)
+        d1 = (log_sk + r_sigma) / (implied_vol * np.sqrt(self.time_to_maturity))
         d1_density = norm.pdf(d1)
         theta = (self.spot * d1_density * implied_vol) / (2 * np.sqrt(self.time_to_maturity))
         gamma = d1_density / (self.spot * implied_vol * np.sqrt(self.time_to_maturity))
         
-        if self.spot > K:
-            local_vol = np.sqrt(theta / ((1/2) * ((self.spot - K)**2) * gamma))
+        if self.spot != K:
+            local_vol = np.sqrt(theta / ((1/2) * (K**2) * gamma))
         else:
             local_vol = np.sqrt(theta / ((1/2) * (K**2) * gamma))
         return local_vol
 
     def compute_local_vol_Derman(self, K, implied_vol):
         '''
+        '
+        ' ***** UNUSED FOR NOW !!! *****
+        '
         ' Compute the local volatility according to the Derman et al. derivation (2006)
         ' K: Float - Strike
         ' implied_vol: Float - Implied volatility
